@@ -8,9 +8,9 @@ advertisement:
 nodes:
   spark-cluster:
     role: heavy-multimodal
-    endpoint: http://192.168.0.4:8000/v1
+    endpoint: http://192.168.0.4:8888/v1
     health:
-      url: http://192.168.0.4:8000/health
+      url: http://192.168.0.4:8888/health
       timeout_seconds: 2
     tags:
       - vision
@@ -31,8 +31,8 @@ nodes:
 models:
   deepseek-vision:
     node: spark-cluster
-    endpoint: http://192.168.0.4:8000/v1
-    model: deepseek-ai/DeepSeek-V4-Flash
+    endpoint: http://192.168.0.4:8888/v1
+    model: deepseek-v4-flash-vision-exp
     capabilities:
       text: true
       vision: true

@@ -36,8 +36,8 @@ Open only what is needed:
 
 - inbound to LXC: `8088/tcp` from trusted LAN clients
 - outbound from LXC:
-  - Spark/vLLM endpoint, for example `http://192.168.0.4:8000/v1`
-  - Spark health endpoint, for example `http://192.168.0.4:8000/health`
+  - Spark/vLLM endpoint, for example `http://192.168.0.4:8888/v1`
+  - Spark health endpoint, for example `http://192.168.0.4:8888/health`
   - RTX 5090 workstation endpoint when it exists
   - GitHub for updates if pulling from the repo directly
 
