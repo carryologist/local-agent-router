@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import time
 from dataclasses import dataclass
 
 import httpx
@@ -12,6 +13,34 @@ from .config import RouterConfig
 class HealthSnapshot:
     healthy_nodes: set[str]
     healthy_models: set[str]
+
+
+class HealthCache:
+    def __init__(self, config: RouterConfig, ttl_seconds: float = 5.0) -> None:
+        self.config = config
+        self.ttl_seconds = ttl_seconds
+        self._snapshot = HealthSnapshot(
+            healthy_nodes=set(config.nodes),
+            healthy_models=set(config.models),
+        )
+        self._checked_at = 0.0
+        self._lock = asyncio.Lock()
+
+    @property
+    def snapshot(self) -> HealthSnapshot:
+        return self._snapshot
+
+    async def get(self, *, force: bool = False) -> HealthSnapshot:
+        now = time.monotonic()
+        if not force and now - self._checked_at < self.ttl_seconds:
+            return self._snapshot
+        async with self._lock:
+            now = time.monotonic()
+            if not force and now - self._checked_at < self.ttl_seconds:
+                return self._snapshot
+            self._snapshot = await check_health(self.config)
+            self._checked_at = time.monotonic()
+            return self._snapshot
 
 
 async def check_health(config: RouterConfig) -> HealthSnapshot:

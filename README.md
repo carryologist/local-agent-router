@@ -59,6 +59,10 @@ LOCAL_AGENT_ROUTER_HOST=0.0.0.0
 LOCAL_AGENT_ROUTER_PORT=8088
 ```
 
+## Deployment
+
+The recommended permanent homelab placement is a small LXC on the always-on ThinkCentre Proxmox host. See [`docs/deployment/thinkcentre-lxc.md`](docs/deployment/thinkcentre-lxc.md).
+
 ## API
 
 - `GET /health` checks backend availability.
