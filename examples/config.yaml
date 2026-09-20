@@ -1,0 +1,86 @@
+advertisement:
+  heartbeat_ttl_seconds: 30
+  remove_unhealthy_after_seconds: 90
+  generic_fallback_tags:
+    - text
+    - local
+
+nodes:
+  spark-cluster:
+    role: heavy-multimodal
+    endpoint: http://192.168.0.4:8000/v1
+    health:
+      url: http://192.168.0.4:8000/health
+      timeout_seconds: 2
+    tags:
+      - vision
+      - long_context
+      - large_model
+
+  rtx-5090:
+    role: fast-specialist
+    endpoint: http://ai-workstation.local:8080/v1
+    health:
+      url: http://ai-workstation.local:8080/health
+      timeout_seconds: 2
+    tags:
+      - fast_tool_calls
+      - home_assistant
+      - embeddings
+
+models:
+  deepseek-vision:
+    node: spark-cluster
+    endpoint: http://192.168.0.4:8000/v1
+    model: deepseek-ai/DeepSeek-V4-Flash
+    capabilities:
+      text: true
+      vision: true
+      tool_calling: true
+      max_context: 4096
+    tags:
+      - vision
+      - long_context
+      - local
+
+  granite-home:
+    node: rtx-5090
+    endpoint: http://ai-workstation.local:8080/v1
+    model: granite-4.2-30b
+    capabilities:
+      text: true
+      vision: false
+      tool_calling: true
+      max_context: 65536
+    tags:
+      - home_assistant
+      - fast
+      - local
+
+routes:
+  - name: vision
+    when:
+      has_image: true
+    prefer:
+      - deepseek-vision
+
+  - name: home_assistant
+    when:
+      tools_include:
+        - HassGetState
+        - HassTurnOn
+        - HassTurnOff
+    prefer:
+      - granite-home
+    fallback:
+      - deepseek-vision
+
+  - name: long_context
+    when:
+      input_tokens_gt: 50000
+    prefer:
+      - deepseek-vision
+
+  - name: default
+    prefer:
+      - deepseek-vision

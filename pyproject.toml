@@ -1,0 +1,32 @@
+[project]
+name = "local-agent-router"
+version = "0.1.0"
+description = "Local-first policy router for homelab AI fleets"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+  "fastapi==0.141.1",
+  "httpx==0.28.1",
+  "pydantic==2.13.5",
+  "pyyaml==6.0.3",
+  "uvicorn[standard]==0.53.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest==9.1.1",
+  "respx==0.23.1",
+]
+
+[project.scripts]
+local-agent-router = "local_agent_router.app:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
