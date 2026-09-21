@@ -46,7 +46,7 @@ models:
   granite-home:
     node: rtx-5090
     endpoint: http://ai-workstation.local:8080/v1
-    model: granite-4.2-30b
+    model: granite-4.2-nothink
     capabilities:
       text: true
       vision: false

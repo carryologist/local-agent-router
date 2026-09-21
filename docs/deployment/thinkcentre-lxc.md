@@ -24,6 +24,16 @@ Do not run this inside Home Assistant OS. HAOS is appliance-like, and the router
 
 Do not run this permanently on the Sparks. The Sparks are inference workers. The router should remain available when Spark inference is offline, restarting, saturated, or being benchmarked.
 
+## Local Names
+
+Use simple mDNS names for local infrastructure:
+
+- `thinkcentre.local` for the Proxmox host
+- `local-agent-router.local` for the router LXC
+- `ai-workstation.local` for the RTX 5090 workstation
+
+The production router config should prefer these names over raw LAN IPs. Keep DHCP reservations or static addresses underneath them so firewall allowlists stay predictable.
+
 ## Network
 
 Expose the router on the LXC LAN IP:
@@ -38,7 +48,7 @@ Open only what is needed:
 - outbound from LXC:
   - Spark/vLLM endpoint, for example `http://192.168.0.4:8888/v1`
   - Spark health endpoint, for example `http://192.168.0.4:8888/health`
-  - RTX 5090 workstation endpoint when it exists
+  - RTX 5090 workstation endpoint, for example `http://ai-workstation.local:8080/v1`
   - GitHub for updates if pulling from the repo directly
 
 Client base URL:
