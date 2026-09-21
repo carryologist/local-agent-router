@@ -31,6 +31,7 @@ Use simple mDNS names for local infrastructure:
 - `thinkcentre.local` for the Proxmox host
 - `local-agent-router.local` for the router LXC
 - `ai-workstation.local` for the RTX 5090 workstation
+- `spark-cluster.local` for the Spark head endpoint
 
 The production router config should prefer these names over raw LAN IPs. Keep DHCP reservations or static addresses underneath them so firewall allowlists stay predictable.
 
@@ -46,15 +47,15 @@ Open only what is needed:
 
 - inbound to LXC: `8088/tcp` from trusted LAN clients
 - outbound from LXC:
-  - Spark/vLLM endpoint, for example `http://192.168.0.4:8888/v1`
-  - Spark health endpoint, for example `http://192.168.0.4:8888/health`
+  - Spark/vLLM endpoint, for example `http://spark-cluster.local:8888/v1`
+  - Spark health endpoint, for example `http://spark-cluster.local:8888/health`
   - RTX 5090 workstation endpoint, for example `http://ai-workstation.local:8080/v1`
   - GitHub for updates if pulling from the repo directly
 
 Client base URL:
 
 ```text
-OPENAI_BASE_URL=http://<router-lxc-ip>:8088/v1
+OPENAI_BASE_URL=http://local-agent-router.local:8088/v1
 ```
 
 ## Install
@@ -166,3 +167,30 @@ Optional safer flow:
 - Use `/v1/models` to confirm what clients see.
 - Keep backend health timeouts short, around 2 seconds, so clients do not hang when a backend is down.
 - Keep at least one generic local fallback route available when possible.
+
+## Current Homelab Deployment
+
+The live deployment created during the MVP bring-up uses:
+
+- Proxmox host: `thinkcentre.local` / `192.168.0.50`
+- Router LXC: VMID `104`, hostname `local-agent-router`, static IP `192.168.0.32`
+- Router service URL: `http://local-agent-router.local:8088`
+- Router OpenAI base URL: `http://local-agent-router.local:8088/v1`
+- Production config: `/etc/local-agent-router/config.yaml`
+- AdGuard DNS rewrites:
+  - `ai-workstation.local -> 192.168.0.41`
+  - `thinkcentre.local -> 192.168.0.50`
+  - `local-agent-router.local -> 192.168.0.32`
+  - `spark-cluster.local -> 192.168.0.4`
+- Spark endpoint: `http://spark-cluster.local:8888/v1`
+- RTX 5090 endpoint: `http://ai-workstation.local:8080/v1`
+
+The 5090 host runs `llama-swap` through `llama-generate.service`. It now listens on `0.0.0.0:8080`, guarded by `llama-swap-firewall.service`, which allows only localhost and the router LXC (`192.168.0.32`) to connect to port `8080`.
+
+Verify the live deployment from the router LXC:
+
+```bash
+curl http://127.0.0.1:8088/health
+curl http://127.0.0.1:8088/routes
+curl http://127.0.0.1:8088/v1/models
+```
