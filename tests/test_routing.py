@@ -11,11 +11,11 @@ CONFIG = RouterConfig.model_validate(
                 "capabilities": {"vision": True, "tool_calling": True, "max_context": 4096},
                 "tags": ["vision", "local"],
             },
-            "granite-home": {
+            "qwen-workhorse": {
                 "endpoint": "http://workstation.local:8080/v1",
-                "model": "granite-4.2-30b",
-                "capabilities": {"tool_calling": True, "max_context": 65536},
-                "tags": ["home_assistant", "local"],
+                "model": "qwen3.8-27b",
+                "capabilities": {"tool_calling": True, "max_context": 131072},
+                "tags": ["home_assistant", "coding", "local"],
             },
         },
         "routes": [
@@ -23,10 +23,10 @@ CONFIG = RouterConfig.model_validate(
             {
                 "name": "home_assistant",
                 "when": {"tools_include": ["HassGetState"]},
-                "prefer": ["granite-home"],
+                "prefer": ["qwen-workhorse"],
                 "fallback": ["deepseek-vision"],
             },
-            {"name": "default", "prefer": ["deepseek-vision"]},
+            {"name": "default", "prefer": ["qwen-workhorse"]},
         ],
     }
 )
@@ -49,17 +49,17 @@ def test_extracts_image_from_multimodal_content():
     assert facts.has_image is True
 
 
-def test_home_assistant_prefers_granite_when_available():
+def test_home_assistant_prefers_qwen_when_available():
     decision = choose_route(
         CONFIG,
         {
             "messages": [{"role": "user", "content": "Is the garage door open?"}],
             "tools": [{"type": "function", "function": {"name": "HassGetState"}}],
         },
-        healthy_models={"granite-home", "deepseek-vision"},
+        healthy_models={"qwen-workhorse", "deepseek-vision"},
     )
     assert decision.route == "home_assistant"
-    assert decision.selected_alias == "granite-home"
+    assert decision.selected_alias == "qwen-workhorse"
     assert decision.fallback_used is False
 
 
@@ -78,11 +78,11 @@ def test_offline_specialist_falls_back_to_generic_model():
     assert decision.degraded is True
 
 
-def test_default_uses_generic_model():
+def test_default_uses_qwen_as_primary():
     decision = choose_route(
         CONFIG,
         {"messages": [{"role": "user", "content": "hello"}]},
-        healthy_models={"deepseek-vision"},
+        healthy_models={"qwen-workhorse", "deepseek-vision"},
     )
     assert decision.route == "default"
-    assert decision.selected_alias == "deepseek-vision"
+    assert decision.selected_alias == "qwen-workhorse"

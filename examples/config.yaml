@@ -18,7 +18,7 @@ nodes:
       - large_model
 
   rtx-5090:
-    role: fast-specialist
+    role: workhorse
     endpoint: http://ai-workstation.local:8080/v1
     health:
       url: http://ai-workstation.local:8080/health
@@ -26,6 +26,7 @@ nodes:
     tags:
       - fast_tool_calls
       - home_assistant
+      - coding
       - embeddings
 
 models:
@@ -43,17 +44,18 @@ models:
       - long_context
       - local
 
-  granite-home:
+  qwen-workhorse:
     node: rtx-5090
     endpoint: http://ai-workstation.local:8080/v1
-    model: granite-4.2-nothink
+    model: qwen3.8-27b
     capabilities:
       text: true
       vision: false
       tool_calling: true
-      max_context: 65536
+      max_context: 131072
     tags:
       - home_assistant
+      - coding
       - fast
       - local
 
@@ -71,7 +73,7 @@ routes:
         - HassTurnOn
         - HassTurnOff
     prefer:
-      - granite-home
+      - qwen-workhorse
     fallback:
       - deepseek-vision
 
@@ -83,4 +85,4 @@ routes:
 
   - name: default
     prefer:
-      - deepseek-vision
+      - qwen-workhorse

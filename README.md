@@ -49,7 +49,7 @@ The server listens on `0.0.0.0:8088` by default.
 
 See [`examples/config.yaml`](examples/config.yaml). Static config defines allowed nodes, models, and routes. Runtime health decides what is advertised.
 
-If the RTX 5090 workstation is offline, its `granite-home` model disappears from `/v1/models`, `/routes` marks the Home Assistant route as degraded, and Home Assistant requests fall back to the generic DeepSeek route.
+If the RTX 5090 workstation is offline, its `qwen-workhorse` model disappears from `/v1/models`, `/routes` marks the Home Assistant route as degraded, and Home Assistant requests fall back to the generic DeepSeek route.
 
 ## Environment
 

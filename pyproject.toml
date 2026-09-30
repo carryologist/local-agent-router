@@ -30,3 +30,10 @@ testpaths = ["tests"]
 
 [tool.ruff]
 line-length = 100
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "pytest>=9.1.1",
+    "respx>=0.23.1",
+]

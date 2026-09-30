@@ -31,18 +31,19 @@ models:
       - local
       - vision
 
-  granite-home:
+  qwen-workhorse:
     node: rtx-5090
     endpoint: http://workstation.local/v1
-    model: granite-4.2-30b
+    model: qwen3.8-27b
     capabilities:
       text: true
       vision: false
       tool_calling: true
-      max_context: 65536
+      max_context: 131072
     tags:
       - local
       - home_assistant
+      - coding
 
 routes:
   - name: home_assistant
@@ -50,13 +51,13 @@ routes:
       tools_include:
         - HassGetState
     prefer:
-      - granite-home
+      - qwen-workhorse
     fallback:
       - deepseek-vision
 
   - name: default
     prefer:
-      - deepseek-vision
+      - qwen-workhorse
 """
 
 
@@ -81,7 +82,7 @@ def test_models_hide_unhealthy_specialist(tmp_path: Path, monkeypatch):
             routes = client.get("/routes").json()["routes"]
             ha_route = next(route for route in routes if route["name"] == "home_assistant")
             assert ha_route["degraded"] is True
-            assert ha_route["unavailable_preferred"] == ["granite-home"]
+            assert ha_route["unavailable_preferred"] == ["qwen-workhorse"]
             assert ha_route["fallback_available"] == ["deepseek-vision"]
 
 
@@ -137,9 +138,9 @@ def test_chat_retries_fallback_after_backend_500(tmp_path: Path, monkeypatch):
             return_value=Response(200, json={"data": [{"id": "deepseek-ai/DeepSeek-V4-Flash"}]})
         )
         respx.get("http://workstation.local/v1/models").mock(
-            return_value=Response(200, json={"data": [{"id": "granite-4.2-30b"}]})
+            return_value=Response(200, json={"data": [{"id": "qwen3.8-27b"}]})
         )
-        granite_route = respx.post("http://workstation.local/v1/chat/completions").mock(
+        qwen_route = respx.post("http://workstation.local/v1/chat/completions").mock(
             return_value=Response(500, text="backend unhappy")
         )
         deepseek_route = respx.post("http://spark.local/v1/chat/completions").mock(
@@ -159,5 +160,5 @@ def test_chat_retries_fallback_after_backend_500(tmp_path: Path, monkeypatch):
     assert response.status_code == 200
     assert response.headers["x-local-agent-model-alias"] == "deepseek-vision"
     assert response.headers["x-local-agent-fallback-used"] == "true"
-    assert granite_route.called
+    assert qwen_route.called
     assert deepseek_route.called
