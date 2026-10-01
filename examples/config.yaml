@@ -77,6 +77,15 @@ routes:
     fallback:
       - deepseek-vision
 
+  - name: blog_draft
+    when:
+      tools_include:
+        - write_blog_draft
+    prefer:
+      - qwen-workhorse
+    fallback:
+      - deepseek-vision
+
   - name: long_context
     when:
       input_tokens_gt: 50000

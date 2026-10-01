@@ -55,6 +55,15 @@ routes:
     fallback:
       - deepseek-vision
 
+  - name: blog_draft
+    when:
+      tools_include:
+        - write_blog_draft
+    prefer:
+      - qwen-workhorse
+    fallback:
+      - deepseek-vision
+
   - name: default
     prefer:
       - qwen-workhorse
@@ -162,3 +171,38 @@ def test_chat_retries_fallback_after_backend_500(tmp_path: Path, monkeypatch):
     assert response.headers["x-local-agent-fallback-used"] == "true"
     assert qwen_route.called
     assert deepseek_route.called
+
+
+def test_blog_draft_routes_to_workhorse(tmp_path: Path, monkeypatch):
+    monkeypatch.setenv("LOCAL_AGENT_ROUTER_HEALTH_TTL_SECONDS", "60")
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text(CONFIG)
+
+    with respx.mock:
+        respx.get("http://spark.local/health").mock(return_value=Response(200))
+        respx.get("http://workstation.local/health").mock(return_value=Response(200))
+        respx.get("http://spark.local/v1/models").mock(
+            return_value=Response(200, json={"data": [{"id": "deepseek-ai/DeepSeek-V4-Flash"}]})
+        )
+        respx.get("http://workstation.local/v1/models").mock(
+            return_value=Response(200, json={"data": [{"id": "qwen3.8-27b"}]})
+        )
+        qwen_route = respx.post("http://workstation.local/v1/chat/completions").mock(
+            return_value=Response(200, json={"choices": [{"message": {"content": "draft"}}]})
+        )
+
+        with TestClient(create_app(str(config_path))) as client:
+            response = client.post(
+                "/v1/chat/completions",
+                json={
+                    "model": "router",
+                    "messages": [{"role": "user", "content": "draft a blog post about the router"}],
+                    "tools": [{"type": "function", "function": {"name": "write_blog_draft"}}],
+                },
+            )
+
+    assert response.status_code == 200
+    assert response.headers["x-local-agent-route"] == "blog_draft"
+    assert response.headers["x-local-agent-model-alias"] == "qwen-workhorse"
+    assert response.headers["x-local-agent-fallback-used"] == "false"
+    assert qwen_route.called

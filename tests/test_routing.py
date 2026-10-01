@@ -26,6 +26,12 @@ CONFIG = RouterConfig.model_validate(
                 "prefer": ["qwen-workhorse"],
                 "fallback": ["deepseek-vision"],
             },
+            {
+                "name": "blog_draft",
+                "when": {"tools_include": ["write_blog_draft"]},
+                "prefer": ["qwen-workhorse"],
+                "fallback": ["deepseek-vision"],
+            },
             {"name": "default", "prefer": ["qwen-workhorse"]},
         ],
     }
@@ -86,3 +92,32 @@ def test_default_uses_qwen_as_primary():
     )
     assert decision.route == "default"
     assert decision.selected_alias == "qwen-workhorse"
+
+
+def test_blog_draft_prefers_qwen_when_tool_declared():
+    decision = choose_route(
+        CONFIG,
+        {
+            "messages": [{"role": "user", "content": "write a blog draft about the router"}],
+            "tools": [{"type": "function", "function": {"name": "write_blog_draft"}}],
+        },
+        healthy_models={"qwen-workhorse", "deepseek-vision"},
+    )
+    assert decision.route == "blog_draft"
+    assert decision.selected_alias == "qwen-workhorse"
+    assert decision.fallback_used is False
+
+
+def test_blog_draft_falls_back_when_workhorse_offline():
+    decision = choose_route(
+        CONFIG,
+        {
+            "messages": [{"role": "user", "content": "write a blog draft"}],
+            "tools": [{"type": "function", "function": {"name": "write_blog_draft"}}],
+        },
+        healthy_models={"deepseek-vision"},
+    )
+    assert decision.route == "blog_draft"
+    assert decision.selected_alias == "deepseek-vision"
+    assert decision.fallback_used is True
+    assert decision.degraded is True

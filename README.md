@@ -51,6 +51,8 @@ See [`examples/config.yaml`](examples/config.yaml). Static config defines allowe
 
 If the RTX 5090 workstation is offline, its `qwen-workhorse` model disappears from `/v1/models`, `/routes` marks the Home Assistant route as degraded, and Home Assistant requests fall back to the generic DeepSeek route.
 
+A `blog_draft` route matches requests that declare a `write_blog_draft` tool and routes them to the RTX 5090 workhorse model (`qwen-workhorse`), falling back to DeepSeek if the workstation is offline. This lets a client (e.g. a blog-writing Coder skill) explicitly signal "this is a draft" and route it to the writing model instead of relying on keyword matching.
+
 ## Environment
 
 ```bash
